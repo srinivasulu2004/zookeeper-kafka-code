@@ -1,0 +1,301 @@
+Perfect.
+Now I’ll give you **the exact steps**, in **correct order**, that you must follow *after* running:
+
+```
+docker compose build
+docker compose up -d
+```
+
+This is the **Debezium + Kafka + Zookeeper + Kafka Connect + PostgreSQL** practical flow.
+
+I’ll make it **step-by-step**, **no confusion**, **exact commands**, **exact expected output**.
+
+---
+
+# ✅ **AFTER DOCKER COMPOSE UP — NEXT STEPS**
+
+Your containers are now running but **CDC (Change Data Capture) is NOT active yet**.
+
+To activate CDC, you must:
+
+---
+
+# 🔥 STEP 1 — Verify all containers are running
+
+Run:
+
+```
+docker ps
+```
+
+You must see:
+
+* zookeeper
+* kafka
+* connect (Kafka Connect + Debezium)
+* postgres
+* schema-registry (if you added)
+* nginx (if included)
+
+If any container is restarting, tell me — I’ll fix it.
+
+---
+
+# 🔥 STEP 2 — Verify Kafka Connect API (CRITICAL)
+
+Kafka Connect (Debezium) API runs at:
+
+```
+http://localhost:8083
+```
+
+Check:
+
+```
+curl http://localhost:8083
+```
+
+Expected output:
+
+```json
+{"version":"x.x.x","commit":"xxxx","kafka_cluster_id":"xxxxx"}
+```
+
+If this doesn’t return JSON → your connector won’t work.
+
+---
+
+# 🔥 STEP 3 — Register your PostgreSQL Debezium connector
+
+You already created:
+
+```
+connectors/postgres-connector.json
+```
+
+So run:
+
+```
+curl -X POST http://localhost:8083/connectors \
+  -H "Content-Type: application/json" \
+  --data @connectors/postgres-connector.json
+```
+
+### ✔ When should you use POST?
+
+👉 **When creating connector first time**
+
+### ✔ When should you use PUT?
+
+👉 **When updating an existing connector**
+
+💡 If you run POST again for same connector name → you will get:
+
+```
+Connector already exists
+```
+
+Then you must use:
+
+```
+curl -X PUT http://localhost:8083/connectors/<connector-name>/config \
+  -H "Content-Type: application/json" \
+  --data @connectors/postgres-connector.json
+```
+
+---
+
+# 🔥 STEP 4 — Verify connector registered successfully
+
+Run:
+
+```
+curl http://localhost:8083/connectors
+```
+
+Expected output:
+
+```
+["postgres-connector"]
+```
+
+Then check status:
+
+```
+curl http://localhost:8083/connectors/postgres-connector/status
+```
+
+Expected:
+
+```
+{"state":"RUNNING"}
+```
+
+---
+
+# 🔥 STEP 5 — Verify topics created in Kafka
+
+Enter Kafka container:
+
+```
+docker exec -it kafka bash
+```
+
+List topics:
+
+```
+kafka-topics.sh --bootstrap-server kafka:9092 --list
+```
+
+You should see:
+
+```
+dbserver1.public.users
+dbserver1.public.orders
+dbserver1.public.products
+dbserver1.inventory.customers
+dbserver1.inventory.orders
+...
+```
+
+If no topics → your connector did not capture changes.
+
+---
+
+# 🔥 STEP 6 — Test CDC (Very Important)
+
+Go into your PostgreSQL container:
+
+```
+docker exec -it postgres bash
+psql -U postgres
+```
+
+Insert a record in your table:
+
+```
+INSERT INTO users (id, name, email) VALUES (1, 'John', 'john@gmail.com');
+```
+
+Now check Kafka messages:
+
+Inside Kafka container:
+
+```
+kafka-console-consumer.sh \
+  --bootstrap-server kafka:9092 \
+  --topic dbserver1.public.users \
+  --from-beginning
+```
+
+Expected output:
+
+```json
+{
+  "before": null,
+  "after": {
+    "id": 1,
+    "name": "John",
+    "email": "john@gmail.com"
+  },
+  "op": "c"
+}
+```
+
+🎉 **THIS CONFIRMS DEBEZIUM IS WORKING**
+(CDC triggered, event captured, pushed to Kafka).
+
+---
+
+# 🔥 STEP 7 — Test Update, Delete
+
+### Update
+
+```
+UPDATE users SET name='Srinivas' WHERE id=1;
+```
+
+Kafka message:
+
+```
+"op": "u"
+```
+
+### Delete
+
+```
+DELETE FROM users WHERE id=1;
+```
+
+Kafka message:
+
+```
+"op": "d"
+```
+
+---
+
+# 🔥 STEP 8 — Check logs if anything fails
+
+Connector logs:
+
+```
+docker logs connect -f
+```
+
+Kafka logs:
+
+```
+docker logs kafka -f
+```
+
+Postgres logs:
+
+```
+docker logs postgres -f
+```
+
+---
+
+# 🔥 STEP 9 — Restart connector if needed
+
+```
+curl -X POST http://localhost:8083/connectors/postgres-connector/restart
+```
+
+---
+
+# 🔥 STEP 10 — Finally verify your Nginx → Backend → Kafka UI (optional)
+
+If you included Kafka UI (AKHQ, Kafdrop etc):
+
+```
+http://localhost:<port>
+```
+
+---
+
+# 🎯 **CONCLUSION — AFTER docker compose, you must do ONLY THESE THINGS:**
+
+1. ✔ Verify containers
+2. ✔ Check Kafka Connect API
+3. ✔ Register connector using POST
+4. ✔ Check connector status
+5. ✔ Verify Kafka topics
+6. ✔ Test CDC insert/update/delete
+7. ✔ Check logs if any errors
+
+---
+
+# 🚀 If you want —
+
+I can now generate:
+
+✅ Full final folder structure
+✅ Full docker-compose.yml (clean, production-ready)
+✅ postgres-connector.json
+✅ nginx.conf
+✅ Debezium flow diagram
+✅ Explanation in simplest DevOps fresher style
+
+Just say: **“Give me full final setup”**
