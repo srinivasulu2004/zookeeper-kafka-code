@@ -1,0 +1,235 @@
+Here are the **exact Debezium connector registration commands (curl commands)** for **Postgres, MySQL, and MongoDB** — based on your Docker Compose setup.
+
+I will give you:
+
+✅ Correct `curl` POST command
+✅ Correct JSON body format
+✅ Correct endpoint
+✅ Correct headers
+
+You just need to save each JSON file, then run the corresponding curl command.
+
+---
+
+# ⭐ 1️⃣ **Postgres Connector Registration Command**
+
+### **JSON file:**
+
+`connect/register-postgres-connector.json`
+
+### **Command:**
+
+```bash
+curl -i -X POST -H "Accept:application/json" -H "Content-Type:application/json" \
+ http://localhost:8083/connectors/ \
+ -d @connect/register-postgres-connector.json
+```
+
+---
+
+# ⭐ 2️⃣ **MySQL Connector Registration Command**
+
+### **JSON file:**
+
+`connect/register-mysql-connector.json`
+
+### **Command:**
+
+```bash
+curl -i -X POST -H "Accept:application/json" -H "Content-Type:application/json" \
+ http://localhost:8083/connectors/ \
+ -d @connect/register-mysql-connector.json
+```
+
+---
+
+# ⭐ 3️⃣ **MongoDB Connector Registration Command**
+
+### **JSON file:**
+
+`connect/register-mongodb-connector.json`
+
+### **Command:**
+
+```bash
+curl -i -X POST -H "Accept:application/json" -H "Content-Type:application/json" \
+ http://localhost:8083/connectors/ \
+ -d @connect/register-mongodb-connector.json
+```
+
+---
+
+# ⭐ 4️⃣ **Check All Connectors**
+
+```bash
+curl http://localhost:8083/connectors
+```
+
+---
+
+# ⭐ 5️⃣ **Check Specific Connector Status**
+
+### Postgres:
+
+```bash
+curl http://localhost:8083/connectors/inventory-connector/status
+```
+
+### MySQL:
+
+```bash
+curl http://localhost:8083/connectors/mysql-connector/status
+```
+
+### MongoDB:
+
+```bash
+curl http://localhost:8083/connectors/mongodb-connector/status
+```
+
+---
+
+# ⭐ 6️⃣ **Delete Connectors (If Needed)**
+
+### Postgres:
+
+```bash
+curl -X DELETE http://localhost:8083/connectors/inventory-connector
+```
+
+### MySQL:
+
+```bash
+curl -X DELETE http://localhost:8083/connectors/mysql-connector
+```
+
+### MongoDB:
+
+```bash
+curl -X DELETE http://localhost:8083/connectors/mongodb-connector
+```
+
+---
+
+# ⭐ 7️⃣ **Validate Config Before Creating Connector**
+
+(Useful for debugging errors)
+
+### Postgres:
+
+```bash
+curl -X PUT -H "Accept:application/json" -H "Content-Type:application/json" \
+ http://localhost:8083/connector-plugins/io.debezium.connector.postgresql.PostgresConnector/config/validate \
+ -d @connect/register-postgres-connector.json
+```
+
+### MySQL:
+
+```bash
+curl -X PUT -H "Accept:application/json" -H "Content-Type:application/json" \
+ http://localhost:8083/connector-plugins/io.debezium.connector.mysql.MySqlConnector/config/validate \
+ -d @connect/register-mysql-connector.json
+```
+
+### MongoDB:
+
+```bash
+curl -X PUT -H "Accept:application/json" -H "Content-Type:application/json" \
+ http://localhost:8083/connector-plugins/io.debezium.connector.mongodb.MongoDbConnector/config/validate \
+ -d @connect/register-mongodb-connector.json
+```
+
+---
+
+# ⭐ 8️⃣ **If you need the JSON files**, here they are (just copy–paste):
+
+---
+
+## 📌 **register-postgres-connector.json**
+
+```json
+{
+  "name": "inventory-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+
+    "database.hostname": "postgres",
+    "database.port": "5432",
+    "database.user": "demo",
+    "database.password": "demopw",
+    "database.dbname": "demo",
+
+    "topic.prefix": "postgres",
+    "database.server.id": "184054",
+
+    "slot.name": "debezium_slot",
+    "plugin.name": "pgoutput",
+
+    "publication.autocreate.mode": "filtered",
+    "snapshot.mode": "initial",
+    "table.include.list": "public.person",
+
+    "database.history.kafka.bootstrap.servers": "kafka:9092",
+    "database.history.kafka.topic": "schema-changes.demo"
+  }
+}
+```
+
+---
+
+## 📌 **register-mysql-connector.json**
+
+```json
+{
+  "name": "mysql-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.mysql.MySqlConnector",
+
+    "database.hostname": "mysql",
+    "database.port": "3306",
+    "database.user": "demo",
+    "database.password": "demopw",
+    "database.server.id": "223344",
+
+    "topic.prefix": "mysql",
+
+    "database.history.kafka.bootstrap.servers": "kafka:9092",
+    "database.history.kafka.topic": "schema-changes.mysql",
+
+    "table.include.list": "demo.person"
+  }
+}
+```
+
+---
+
+## 📌 **register-mongodb-connector.json**
+
+```json
+{
+  "name": "mongodb-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.mongodb.MongoDbConnector",
+
+    "mongodb.hosts": "rs0/mongodb:27017",
+    "mongodb.name": "mongoserver1",
+
+    "topic.prefix": "mongo",
+
+    "collection.include.list": "demo.person"
+  }
+}
+```
+
+---
+
+# ⭐ If you want, I can also provide:
+
+✅ Single combined docker-compose with
+Postgres + MySQL + MongoDB + Kafka + Zookeeper + Connect + Backend + Frontend + Nginx
+
+✅ End-to-end flow diagram (DB → Debezium → Kafka → Backend → React)
+
+✅ Testing commands for each DB
+
+Just tell me **“give me full docker-compose + JSONs”** and I’ll generate it.
